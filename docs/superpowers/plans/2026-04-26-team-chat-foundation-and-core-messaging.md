@@ -167,11 +167,15 @@ Expected: FAIL with missing workspace files or missing `workspacePackages` expor
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.0"
   }
 }
 ```
 
-Each workspace manifest should also expose minimal placeholder `build`, `dev`, `lint`, `test`, and `typecheck` scripts so the root recursive scripts are valid from day one.
+Each workspace manifest should also expose minimal `build`, `dev`, `lint`, `test`, and `typecheck` scripts so the root recursive scripts are valid from day one. `packages/testing/package.json` should wire `test` to `vitest run src/workspace.test.ts`, while the other workspace manifests may use lightweight placeholder scripts until their real tasks begin.
 
 ```yaml
 # pnpm-workspace.yaml
