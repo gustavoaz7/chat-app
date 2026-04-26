@@ -112,25 +112,38 @@ This plan intentionally defers:
 
 ```ts
 // packages/testing/src/workspace.test.ts
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { workspacePackages } from "./workspace-packages";
 
+function discoverWorkspacePackages(): string[] {
+  return ["apps", "packages", "services"].flatMap((topLevelDir) =>
+    readdirSync(topLevelDir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => `${topLevelDir}/${entry.name}`),
+  );
+}
+
 describe("workspace packages", () => {
-  it("declares the required top-level apps and services", () => {
-    expect(workspacePackages()).toEqual([
-      "apps/web",
-      "packages/config",
-      "packages/contracts",
-      "packages/database",
-      "packages/observability",
-      "packages/testing",
-      "services/api-gateway",
-      "services/chat-service",
-      "services/identity-service",
-      "services/notification-service",
-      "services/realtime-gateway",
-      "services/search-service",
-    ]);
+  it("declares the required top-level apps and services on disk", () => {
+    expect(workspacePackages()).toEqual(discoverWorkspacePackages().sort());
+  });
+
+  it("keeps every workspace manifest aligned with the root script contract", () => {
+    const rootPackageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
+      scripts: Record<string, string>;
+    };
+
+    for (const workspacePackage of workspacePackages()) {
+      const workspacePackageJson = JSON.parse(
+        readFileSync(join(workspacePackage, "package.json"), "utf8"),
+      ) as { scripts: Record<string, string> };
+
+      expect(Object.keys(workspacePackageJson.scripts).sort()).toEqual(
+        Object.keys(rootPackageJson.scripts).sort(),
+      );
+    }
   });
 });
 ```
@@ -157,6 +170,8 @@ Expected: FAIL with missing workspace files or missing `workspacePackages` expor
   }
 }
 ```
+
+Each workspace manifest should also expose minimal placeholder `build`, `dev`, `lint`, `test`, and `typecheck` scripts so the root recursive scripts are valid from day one.
 
 ```yaml
 # pnpm-workspace.yaml
