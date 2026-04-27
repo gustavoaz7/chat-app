@@ -228,27 +228,50 @@ git commit -m "chore: bootstrap monorepo structure"
 
 ```ts
 // packages/testing/src/infra-smoke.test.ts
-import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+
+const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+function readWorkspaceFile(relativePath: string): string {
+  return readFileSync(join(workspaceRoot, relativePath), "utf8");
+}
+
+function parseEnvFile(content: string): Record<string, string> {
+  return Object.fromEntries(
+    content
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0 && !line.startsWith("#"))
+      .map((line) => {
+        const [key, ...value] = line.split("=");
+        return [key, value.join("=")];
+      }),
+  );
+}
 
 describe("local infrastructure", () => {
   it("defines postgres, redis, and nats in docker compose", () => {
-    const compose = readFileSync("infra/docker-compose.yml", "utf8");
-    const envExample = readFileSync("infra/.env.example", "utf8");
+    const compose = readWorkspaceFile("infra/docker-compose.yml");
+    const envExample = parseEnvFile(readWorkspaceFile("infra/.env.example"));
 
-    expect(compose).toContain("postgres:");
-    expect(compose).toContain("redis:");
-    expect(compose).toContain("nats:");
-    expect(compose).toContain("POSTGRES_DB: team_chat");
-    expect(compose).toContain("\"5432:5432\"");
-    expect(compose).toContain("\"6379:6379\"");
-    expect(compose).toContain("\"4222:4222\"");
-    expect(compose).toContain("\"8222:8222\"");
-    expect(compose).toContain("command: [\"-js\"]");
+    expect(compose.match(/^  postgres:$/m)).not.toBeNull();
+    expect(compose.match(/^  redis:$/m)).not.toBeNull();
+    expect(compose.match(/^  nats:$/m)).not.toBeNull();
+    expect(compose.match(/POSTGRES_DB:\s+team_chat/)).not.toBeNull();
+    expect(compose.match(/-\s+"5432:5432"/)).not.toBeNull();
+    expect(compose.match(/-\s+"6379:6379"/)).not.toBeNull();
+    expect(compose.match(/-\s+"4222:4222"/)).not.toBeNull();
+    expect(compose.match(/-\s+"8222:8222"/)).not.toBeNull();
+    expect(compose.match(/command:\s+\["-js"\]/)).not.toBeNull();
 
-    expect(envExample).toContain("POSTGRES_URL=postgresql://chat:chat@localhost:5432/team_chat");
-    expect(envExample).toContain("REDIS_URL=redis://localhost:6379");
-    expect(envExample).toContain("NATS_URL=nats://localhost:4222");
+    expect(envExample).toEqual({
+      POSTGRES_URL: "postgresql://chat:chat@localhost:5432/team_chat",
+      REDIS_URL: "redis://localhost:6379",
+      NATS_URL: "nats://localhost:4222",
+    });
   });
 });
 ```
