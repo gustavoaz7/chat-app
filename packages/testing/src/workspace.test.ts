@@ -1,16 +1,21 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { workspacePackages } from "./workspace-packages";
 
+const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+
 function packageDirectories(parentDirectory: string): string[] {
-  return readdirSync(parentDirectory, { withFileTypes: true })
+  return readdirSync(join(workspaceRoot, parentDirectory), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => `${parentDirectory}/${entry.name}`);
 }
 
 function packageManifest(relativePath: string): { scripts?: Record<string, string> } {
-  return JSON.parse(readFileSync(join(relativePath, "package.json"), "utf8")) as { scripts?: Record<string, string> };
+  return JSON.parse(readFileSync(join(workspaceRoot, relativePath, "package.json"), "utf8")) as {
+    scripts?: Record<string, string>;
+  };
 }
 
 describe("workspace packages", () => {
@@ -21,7 +26,8 @@ describe("workspace packages", () => {
   });
 
   it("keeps each workspace package aligned with the root script contract", () => {
-    const rootManifest = JSON.parse(readFileSync("package.json", "utf8")) as {
+    const rootManifest = JSON.parse(readFileSync(join(workspaceRoot, "package.json"), "utf8")) as {
+      devDependencies?: Record<string, string>;
       scripts: Record<string, string>;
     };
 
@@ -33,11 +39,18 @@ describe("workspace packages", () => {
       "typecheck",
     ]);
 
+    expect(rootManifest.devDependencies).toMatchObject({
+      typescript: expect.any(String),
+      vitest: expect.any(String),
+    });
+
     for (const packagePath of workspacePackages()) {
       const manifest = packageManifest(packagePath);
 
       expect(manifest.scripts).toBeDefined();
       expect(Object.keys(manifest.scripts ?? {})).toEqual(Object.keys(rootManifest.scripts));
     }
+
+    expect(packageManifest("packages/testing").scripts?.test).toBe("vitest run src/workspace.test.ts");
   });
 });
