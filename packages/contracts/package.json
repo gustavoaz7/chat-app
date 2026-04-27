@@ -2,6 +2,9 @@
   "name": "@team-chat/contracts",
   "private": true,
   "version": "0.0.0",
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
   "scripts": {
     "build": "node -e \"process.exit(0)\"",
     "dev": "node -e \"process.exit(0)\"",
