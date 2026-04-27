@@ -345,6 +345,8 @@ git commit -m "chore: add local infrastructure stack"
 - Create: `packages/contracts/src/index.ts`
 - Create: `packages/config/src/env.ts`
 - Create: `packages/config/src/index.ts`
+- Modify: `packages/contracts/package.json`
+- Modify: `packages/config/package.json`
 - Test: `packages/contracts/src/contracts.test.ts`
 
 - [ ] **Step 1: Write the failing contract test**
@@ -431,6 +433,8 @@ export const BaseServiceEnvSchema = z.object({
   NATS_URL: z.string().url(),
 });
 ```
+
+`packages/contracts/package.json` and `packages/config/package.json` should declare `zod` so the schemas are executable and the contract test can pass honestly.
 
 - [ ] **Step 4: Run test to verify it passes**
 
