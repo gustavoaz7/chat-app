@@ -394,11 +394,13 @@ Expected: FAIL because schemas do not exist.
 // packages/contracts/src/http.ts
 import { z } from "zod";
 
+export const MessageBodySchema = z.string().min(1).max(4000);
+
 export const SendMessageRequestSchema = z.object({
   workspaceId: z.string().min(1),
   channelId: z.string().min(1),
   senderId: z.string().min(1),
-  body: z.string().min(1).max(4000),
+  body: MessageBodySchema,
 });
 
 export const CreateWorkspaceRequestSchema = z.object({
@@ -410,6 +412,7 @@ export const CreateWorkspaceRequestSchema = z.object({
 ```ts
 // packages/contracts/src/events.ts
 import { z } from "zod";
+import { MessageBodySchema } from "./http";
 
 export const MessageSentEventSchema = z.object({
   type: z.literal("chat.message.sent"),
@@ -417,7 +420,7 @@ export const MessageSentEventSchema = z.object({
   workspaceId: z.string().min(1),
   channelId: z.string().min(1),
   senderId: z.string().min(1),
-  body: z.string().min(1),
+  body: MessageBodySchema,
 });
 ```
 
@@ -428,13 +431,26 @@ import { z } from "zod";
 export const BaseServiceEnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive(),
+});
+
+export const PostgresEnvSchema = z.object({
   POSTGRES_URL: z.string().url(),
+});
+
+export const RedisEnvSchema = z.object({
   REDIS_URL: z.string().url(),
+});
+
+export const NatsEnvSchema = z.object({
   NATS_URL: z.string().url(),
 });
 ```
 
 `packages/contracts/package.json` and `packages/config/package.json` should declare `zod` so the schemas are executable and the contract test can pass honestly.
+
+Also tighten the contract test so it covers:
+- `CreateWorkspaceRequestSchema`
+- the shared message-body limit being enforced consistently by both `SendMessageRequestSchema` and `MessageSentEventSchema`
 
 - [ ] **Step 4: Run test to verify it passes**
 
