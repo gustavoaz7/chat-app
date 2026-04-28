@@ -4,7 +4,7 @@ import {
   NatsEnvSchema,
   PostgresEnvSchema,
   RedisEnvSchema,
-} from "./env";
+} from "./index";
 
 describe("config env schemas", () => {
   it("defaults NODE_ENV to development", () => {

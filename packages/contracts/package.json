@@ -6,10 +6,10 @@
     "zod": "^3.25.76"
   },
   "scripts": {
-    "build": "node -e \"process.exit(0)\"",
+    "build": "tsc -p tsconfig.json",
     "dev": "node -e \"process.exit(0)\"",
-    "lint": "node -e \"process.exit(0)\"",
+    "lint": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run src/contracts.test.ts",
-    "typecheck": "node -e \"process.exit(0)\""
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }
