@@ -37,7 +37,14 @@ importers:
 
   services/api-gateway: {}
 
-  services/chat-service: {}
+  services/chat-service:
+    dependencies:
+      '@team-chat/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      fastify:
+        specifier: ^4.29.1
+        version: 4.29.1
 
   services/identity-service:
     dependencies:
