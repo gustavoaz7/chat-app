@@ -4,7 +4,7 @@ import {
   NatsEnvSchema,
   PostgresEnvSchema,
   RedisEnvSchema,
-} from "./index";
+} from "@team-chat/config";
 
 describe("config env schemas", () => {
   it("defaults NODE_ENV to development", () => {
