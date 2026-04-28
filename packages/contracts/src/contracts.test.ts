@@ -3,7 +3,7 @@ import {
   CreateWorkspaceRequestSchema,
   MessageSentEventSchema,
   SendMessageRequestSchema,
-} from "./index";
+} from "@team-chat/contracts";
 
 describe("shared contracts", () => {
   it("exposes a send-message request schema", () => {
