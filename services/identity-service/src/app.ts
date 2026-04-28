@@ -1,13 +1,14 @@
 import Fastify from "fastify";
 import { WorkspaceService } from "./domain/workspace-service";
+import type { WorkspaceServicePort } from "./domain/workspace-service";
 import { registerHealthRoutes } from "./routes/health";
 import { registerWorkspaceRoutes } from "./routes/workspaces";
 
-export function buildApp(deps?: { workspaceService: WorkspaceService }) {
+export function buildApp(deps?: { workspaceService: WorkspaceServicePort }) {
   const app = Fastify();
   const workspaceService = deps?.workspaceService;
 
-  if (deps !== undefined && !(workspaceService instanceof WorkspaceService)) {
+  if (deps !== undefined && typeof workspaceService?.createWorkspace !== "function") {
     throw new Error("workspaceService dependency is required when deps are provided");
   }
 
