@@ -625,6 +625,7 @@ git commit -m "feat: add identity workspace creation service"
 - Create: `services/chat-service/src/domain/message-service.ts`
 - Create: `services/chat-service/src/domain/outbox-repository.ts`
 - Create: `services/chat-service/prisma/schema.prisma`
+- Modify: `services/chat-service/package.json`
 - Test: `services/chat-service/src/routes/messages.test.ts`
 
 - [ ] **Step 1: Write the failing send-message test**
@@ -748,6 +749,8 @@ export async function registerMessageRoutes(app: FastifyInstance) {
   });
 }
 ```
+
+`services/chat-service/package.json` should declare the minimum dependencies needed to support the requested Task 5 shape, including `fastify` and the workspace dependency on `@team-chat/contracts`, so the focused message-route test can run against the real package/service imports.
 
 - [ ] **Step 4: Run test to verify it passes**
 
