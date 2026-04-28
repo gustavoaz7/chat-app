@@ -577,10 +577,10 @@ import { WorkspaceService } from "./domain/workspace-service";
 import { registerWorkspaceRoutes } from "./routes/workspaces";
 
 export function buildApp(deps?: {
-  workspaceService?: WorkspaceService;
+  workspaceService: WorkspaceService;
 }) {
   const app = Fastify();
-  const workspaceService = deps?.workspaceService ?? new WorkspaceService();
+  const workspaceService = deps ? deps.workspaceService : new WorkspaceService();
   void registerWorkspaceRoutes(app, workspaceService);
   return app;
 }
@@ -590,10 +590,10 @@ export function buildApp(deps?: {
 
 Also tighten the service package interface so `services/identity-service/package.json` runs a real local `test` script for `src/routes/workspaces.test.ts`, and use the same local command for `lint`/`typecheck` quality gates until dedicated service-level tooling is introduced.
 
-Tighten the service package scripts further so they do not misrepresent `build` or `dev`:
-- `test` should run the real local workspace-route test
-- `lint` and `typecheck` may reuse the same local verification command for now
-- `build` and `dev` should be explicit placeholder echoes that clearly communicate they are not implemented yet, rather than silent success no-ops
+Tighten the service package interface further so it does not advertise fake capabilities:
+- keep a real local `test` script for the workspace-route test
+- remove or stop exposing misleading `build`, `dev`, `lint`, and `typecheck` scripts until real service tooling exists
+- tests that exercise injection should use the `WorkspaceServicePort` shape directly rather than subclassing the concrete `WorkspaceService`
 
 - [ ] **Step 4: Run test to verify it passes**
 
