@@ -348,6 +348,7 @@ git commit -m "chore: add local infrastructure stack"
 - Modify: `packages/contracts/package.json`
 - Modify: `packages/config/package.json`
 - Test: `packages/contracts/src/contracts.test.ts`
+- Test: `packages/config/src/env.test.ts`
 
 - [ ] **Step 1: Write the failing contract test**
 
@@ -451,6 +452,12 @@ export const NatsEnvSchema = z.object({
 Also tighten the contract test so it covers:
 - `CreateWorkspaceRequestSchema`
 - the shared message-body limit being enforced consistently by both `SendMessageRequestSchema` and `MessageSentEventSchema`
+- `packages/config/src/env.test.ts` should cover:
+  - `BaseServiceEnvSchema` defaulting `NODE_ENV` to `development`
+  - `PORT` coercion from string to number
+  - `PostgresEnvSchema`, `RedisEnvSchema`, and `NatsEnvSchema` accepting valid URLs
+- `packages/contracts/package.json` should run the real contracts test
+- `packages/config/package.json` should run the real env-schema test
 
 - [ ] **Step 4: Run test to verify it passes**
 
