@@ -573,11 +573,11 @@ export async function registerWorkspaceRoutes(
 ```ts
 // services/identity-service/src/app.ts
 import Fastify from "fastify";
-import { WorkspaceService } from "./domain/workspace-service";
+import { WorkspaceService, type WorkspaceServicePort } from "./domain/workspace-service";
 import { registerWorkspaceRoutes } from "./routes/workspaces";
 
 export function buildApp(deps?: {
-  workspaceService: WorkspaceService;
+  workspaceService: WorkspaceServicePort;
 }) {
   const app = Fastify();
   const workspaceService = deps ? deps.workspaceService : new WorkspaceService();
@@ -594,6 +594,7 @@ Tighten the service package interface further so it does not advertise fake capa
 - keep a real local `test` script for the workspace-route test
 - remove or stop exposing misleading `build`, `dev`, `lint`, and `typecheck` scripts until real service tooling exists
 - tests that exercise injection should use the `WorkspaceServicePort` shape directly rather than subclassing the concrete `WorkspaceService`
+- `buildApp()` should accept the same `WorkspaceServicePort` abstraction that `registerWorkspaceRoutes()` uses, so the app boundary and route boundary stay aligned
 
 - [ ] **Step 4: Run test to verify it passes**
 
