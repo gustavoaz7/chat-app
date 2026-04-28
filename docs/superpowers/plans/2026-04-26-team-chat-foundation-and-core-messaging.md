@@ -347,6 +347,8 @@ git commit -m "chore: add local infrastructure stack"
 - Create: `packages/config/src/index.ts`
 - Modify: `packages/contracts/package.json`
 - Modify: `packages/config/package.json`
+- Create: `packages/contracts/tsconfig.json`
+- Create: `packages/config/tsconfig.json`
 - Test: `packages/contracts/src/contracts.test.ts`
 - Test: `packages/config/src/env.test.ts`
 
@@ -456,8 +458,13 @@ Also tighten the contract test so it covers:
   - `BaseServiceEnvSchema` defaulting `NODE_ENV` to `development`
   - `PORT` coercion from string to number
   - `PostgresEnvSchema`, `RedisEnvSchema`, and `NatsEnvSchema` accepting valid URLs
-- `packages/contracts/package.json` should run the real contracts test
-- `packages/config/package.json` should run the real env-schema test
+- `packages/config/src/env.test.ts` should import from the public package entrypoint rather than `./env`
+- `packages/contracts/package.json` and `packages/config/package.json` should stop using fake success scripts for package quality gates
+- add package-local `tsconfig.json` files and make:
+  - `build` emit declarations into `dist/`
+  - `typecheck` run `tsc --noEmit`
+  - `lint` run the same TypeScript static check until a dedicated linter is introduced
+  - `test` run the real Vitest file for each package
 
 - [ ] **Step 4: Run test to verify it passes**
 
