@@ -563,7 +563,15 @@ export async function registerWorkspaceRoutes(
   workspaceService: Pick<WorkspaceService, "createWorkspace">,
 ) {
   app.post("/workspaces", async (request, reply) => {
-    const payload = CreateWorkspaceRequestSchema.parse(request.body);
+    const parsed = CreateWorkspaceRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({
+        message: "Invalid workspace payload",
+        issues: parsed.error.issues,
+      });
+    }
+
+    const payload = parsed.data;
     const workspace = await workspaceService.createWorkspace(payload);
     return reply.code(201).send(workspace);
   });
@@ -595,6 +603,7 @@ Tighten the service package interface further so it does not advertise fake capa
 - remove or stop exposing misleading `build`, `dev`, `lint`, and `typecheck` scripts until real service tooling exists
 - tests that exercise injection should use the `WorkspaceServicePort` shape directly rather than subclassing the concrete `WorkspaceService`
 - `buildApp()` should accept the same `WorkspaceServicePort` abstraction that `registerWorkspaceRoutes()` uses, so the app boundary and route boundary stay aligned
+- add a focused invalid-payload test proving malformed create-workspace input returns an explicit 4xx response instead of surfacing as a generic server error
 
 - [ ] **Step 4: Run test to verify it passes**
 
