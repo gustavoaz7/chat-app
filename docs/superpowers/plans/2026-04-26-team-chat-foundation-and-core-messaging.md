@@ -494,6 +494,7 @@ git commit -m "feat: add shared contracts and config schemas"
 - Create: `services/identity-service/src/routes/workspaces.ts`
 - Create: `services/identity-service/src/domain/workspace-service.ts`
 - Create: `services/identity-service/prisma/schema.prisma`
+- Modify: `services/identity-service/package.json`
 - Test: `services/identity-service/src/routes/workspaces.test.ts`
 
 - [ ] **Step 1: Write the failing workspace creation test**
@@ -579,6 +580,8 @@ export function buildApp() {
   return app;
 }
 ```
+
+`services/identity-service/package.json` should declare the minimum dependencies needed to support the requested Task 4 shape, including `fastify` and the workspace dependency on `@team-chat/contracts`, so the service can use the real package import and app bootstrap rather than a local test harness.
 
 - [ ] **Step 4: Run test to verify it passes**
 
