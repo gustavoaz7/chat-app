@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../app";
+import { WorkspaceService } from "../domain/workspace-service";
 import { registerWorkspaceRoutes } from "./workspaces";
 
 describe("POST /workspaces", () => {
@@ -53,6 +54,44 @@ describe("POST /workspaces", () => {
       id: "ws_injected",
       name: "Injected",
       ownerUserId: "usr_injected",
+    });
+
+    await app.close();
+  });
+
+  it("uses the injected workspace service through buildApp", async () => {
+    class TestWorkspaceService extends WorkspaceService {
+      override async createWorkspace(input: {
+        name: string;
+        ownerUserId: string;
+      }) {
+        return {
+          id: "ws_from_app_deps",
+          name: input.name,
+          ownerUserId: input.ownerUserId,
+        };
+      }
+    }
+
+    const app = buildApp({
+      workspaceService: new TestWorkspaceService(),
+    });
+    await app.ready();
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/workspaces",
+      payload: {
+        name: "Composed",
+        ownerUserId: "usr_app",
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toMatchObject({
+      id: "ws_from_app_deps",
+      name: "Composed",
+      ownerUserId: "usr_app",
     });
 
     await app.close();

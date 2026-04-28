@@ -7,8 +7,8 @@
     "fastify": "^4.29.1"
   },
   "scripts": {
-    "build": "node -e \"process.exit(0)\"",
-    "dev": "node -e \"process.exit(0)\"",
+    "build": "node -e \"console.log('build not implemented yet for @services/identity-service')\"",
+    "dev": "node -e \"console.log('dev not implemented yet for @services/identity-service')\"",
     "lint": "vitest run src/routes/workspaces.test.ts",
     "test": "vitest run src/routes/workspaces.test.ts",
     "typecheck": "vitest run src/routes/workspaces.test.ts"
