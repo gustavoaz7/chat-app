@@ -27,6 +27,27 @@ describe("POST /workspaces", () => {
     await app.close();
   });
 
+  it("returns a 400 response for malformed workspace input", async () => {
+    const app = buildApp();
+    await app.ready();
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/workspaces",
+      payload: {
+        name: "",
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({
+      message: "Invalid workspace payload",
+    });
+    expect(response.json().issues).toBeInstanceOf(Array);
+
+    await app.close();
+  });
+
   it("uses the injected workspace service", async () => {
     const app = Fastify();
     await registerWorkspaceRoutes(app, {
