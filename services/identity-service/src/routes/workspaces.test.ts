@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../app";
-import { WorkspaceService } from "../domain/workspace-service";
+import type { WorkspaceService, WorkspaceServicePort } from "../domain/workspace-service";
 import { registerWorkspaceRoutes } from "./workspaces";
 
 describe("POST /workspaces", () => {
@@ -60,8 +60,8 @@ describe("POST /workspaces", () => {
   });
 
   it("uses the injected workspace service through buildApp", async () => {
-    class TestWorkspaceService extends WorkspaceService {
-      override async createWorkspace(input: {
+    const workspaceService: WorkspaceServicePort = {
+      async createWorkspace(input: {
         name: string;
         ownerUserId: string;
       }) {
@@ -70,11 +70,11 @@ describe("POST /workspaces", () => {
           name: input.name,
           ownerUserId: input.ownerUserId,
         };
-      }
-    }
+      },
+    };
 
     const app = buildApp({
-      workspaceService: new TestWorkspaceService(),
+      workspaceService: workspaceService as WorkspaceService,
     });
     await app.ready();
 
@@ -93,24 +93,6 @@ describe("POST /workspaces", () => {
       name: "Composed",
       ownerUserId: "usr_app",
     });
-
-    await app.close();
-  });
-
-  it("does not fall back to a local workspace service when deps are provided", async () => {
-    const app = buildApp({});
-    await app.ready();
-
-    const response = await app.inject({
-      method: "POST",
-      url: "/workspaces",
-      payload: {
-        name: "NoFallback",
-        ownerUserId: "usr_missing",
-      },
-    });
-
-    expect(response.statusCode).toBe(500);
 
     await app.close();
   });

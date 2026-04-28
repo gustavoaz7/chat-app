@@ -7,10 +7,6 @@
     "fastify": "^4.29.1"
   },
   "scripts": {
-    "build": "node -e \"console.log('build not implemented yet for @services/identity-service')\"",
-    "dev": "node -e \"console.log('dev not implemented yet for @services/identity-service')\"",
-    "lint": "node -e \"console.log('lint not implemented yet for @services/identity-service')\"",
-    "test": "vitest run src/routes/workspaces.test.ts",
-    "typecheck": "node -e \"console.log('typecheck not implemented yet for @services/identity-service')\""
+    "test": "vitest run src/routes/workspaces.test.ts"
   }
 }
