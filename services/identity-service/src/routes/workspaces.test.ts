@@ -98,7 +98,7 @@ describe("POST /workspaces", () => {
   });
 
   it("does not fall back to a local workspace service when deps are provided", async () => {
-    const app = buildApp({} as { workspaceService: WorkspaceService });
+    const app = buildApp({});
     await app.ready();
 
     const response = await app.inject({
