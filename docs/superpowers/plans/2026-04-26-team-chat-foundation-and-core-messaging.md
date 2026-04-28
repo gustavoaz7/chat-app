@@ -558,9 +558,10 @@ import type { FastifyInstance } from "fastify";
 import { CreateWorkspaceRequestSchema } from "@team-chat/contracts";
 import { WorkspaceService } from "../domain/workspace-service";
 
-export async function registerWorkspaceRoutes(app: FastifyInstance) {
-  const workspaceService = new WorkspaceService();
-
+export async function registerWorkspaceRoutes(
+  app: FastifyInstance,
+  workspaceService: Pick<WorkspaceService, "createWorkspace">,
+) {
   app.post("/workspaces", async (request, reply) => {
     const payload = CreateWorkspaceRequestSchema.parse(request.body);
     const workspace = await workspaceService.createWorkspace(payload);
@@ -572,16 +573,20 @@ export async function registerWorkspaceRoutes(app: FastifyInstance) {
 ```ts
 // services/identity-service/src/app.ts
 import Fastify from "fastify";
+import { WorkspaceService } from "./domain/workspace-service";
 import { registerWorkspaceRoutes } from "./routes/workspaces";
 
 export function buildApp() {
   const app = Fastify();
-  void registerWorkspaceRoutes(app);
+  const workspaceService = new WorkspaceService();
+  void registerWorkspaceRoutes(app, workspaceService);
   return app;
 }
 ```
 
 `services/identity-service/package.json` should declare the minimum dependencies needed to support the requested Task 4 shape, including `fastify` and the workspace dependency on `@team-chat/contracts`, so the service can use the real package import and app bootstrap rather than a local test harness.
+
+Also tighten the service package interface so `services/identity-service/package.json` runs a real local `test` script for `src/routes/workspaces.test.ts`, and use the same local command for `lint`/`typecheck` quality gates until dedicated service-level tooling is introduced.
 
 - [ ] **Step 4: Run test to verify it passes**
 
