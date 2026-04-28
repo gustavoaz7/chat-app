@@ -2,6 +2,10 @@
   "name": "@services/identity-service",
   "private": true,
   "version": "0.0.0",
+  "dependencies": {
+    "@team-chat/contracts": "workspace:*",
+    "fastify": "^4.29.1"
+  },
   "scripts": {
     "build": "node -e \"process.exit(0)\"",
     "dev": "node -e \"process.exit(0)\"",

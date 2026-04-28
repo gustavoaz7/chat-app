@@ -4,6 +4,7 @@ import { buildApp } from "../app";
 describe("POST /workspaces", () => {
   it("creates a workspace for an owner", async () => {
     const app = buildApp();
+    await app.ready();
 
     const response = await app.inject({
       method: "POST",
@@ -19,5 +20,7 @@ describe("POST /workspaces", () => {
       name: "Acme",
       ownerUserId: "usr_123",
     });
+
+    await app.close();
   });
 });

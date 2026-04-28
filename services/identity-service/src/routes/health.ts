@@ -1,8 +1,6 @@
-interface AppRouteRegistrar {
-  get(path: string, handler: () => Promise<unknown> | unknown): void;
-}
+import type { FastifyInstance } from "fastify";
 
-export async function registerHealthRoutes(app: AppRouteRegistrar) {
+export async function registerHealthRoutes(app: FastifyInstance) {
   app.get("/health", async () => ({
     status: "ok",
   }));

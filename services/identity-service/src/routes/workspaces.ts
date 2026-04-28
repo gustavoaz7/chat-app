@@ -1,21 +1,8 @@
-import { CreateWorkspaceRequestSchema } from "../../../../packages/contracts/src";
+import type { FastifyInstance } from "fastify";
+import { CreateWorkspaceRequestSchema } from "@team-chat/contracts";
 import { WorkspaceService } from "../domain/workspace-service";
 
-interface AppRouteRegistrar {
-  post(
-    path: string,
-    handler: (
-      request: { body?: unknown },
-      reply: {
-        code: (statusCode: number) => {
-          send: (payload: unknown) => { statusCode: number; payload: unknown };
-        };
-      },
-    ) => Promise<unknown> | unknown,
-  ): void;
-}
-
-export async function registerWorkspaceRoutes(app: AppRouteRegistrar) {
+export async function registerWorkspaceRoutes(app: FastifyInstance) {
   const workspaceService = new WorkspaceService();
 
   app.post("/workspaces", async (request, reply) => {
