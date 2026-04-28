@@ -96,4 +96,22 @@ describe("POST /workspaces", () => {
 
     await app.close();
   });
+
+  it("does not fall back to a local workspace service when deps are provided", async () => {
+    const app = buildApp({} as { workspaceService: WorkspaceService });
+    await app.ready();
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/workspaces",
+      payload: {
+        name: "NoFallback",
+        ownerUserId: "usr_missing",
+      },
+    });
+
+    expect(response.statusCode).toBe(500);
+
+    await app.close();
+  });
 });
