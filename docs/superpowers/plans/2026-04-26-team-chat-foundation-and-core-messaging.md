@@ -576,9 +576,11 @@ import Fastify from "fastify";
 import { WorkspaceService } from "./domain/workspace-service";
 import { registerWorkspaceRoutes } from "./routes/workspaces";
 
-export function buildApp() {
+export function buildApp(deps?: {
+  workspaceService?: WorkspaceService;
+}) {
   const app = Fastify();
-  const workspaceService = new WorkspaceService();
+  const workspaceService = deps?.workspaceService ?? new WorkspaceService();
   void registerWorkspaceRoutes(app, workspaceService);
   return app;
 }
@@ -587,6 +589,11 @@ export function buildApp() {
 `services/identity-service/package.json` should declare the minimum dependencies needed to support the requested Task 4 shape, including `fastify` and the workspace dependency on `@team-chat/contracts`, so the service can use the real package import and app bootstrap rather than a local test harness.
 
 Also tighten the service package interface so `services/identity-service/package.json` runs a real local `test` script for `src/routes/workspaces.test.ts`, and use the same local command for `lint`/`typecheck` quality gates until dedicated service-level tooling is introduced.
+
+Tighten the service package scripts further so they do not misrepresent `build` or `dev`:
+- `test` should run the real local workspace-route test
+- `lint` and `typecheck` may reuse the same local verification command for now
+- `build` and `dev` should be explicit placeholder echoes that clearly communicate they are not implemented yet, rather than silent success no-ops
 
 - [ ] **Step 4: Run test to verify it passes**
 
