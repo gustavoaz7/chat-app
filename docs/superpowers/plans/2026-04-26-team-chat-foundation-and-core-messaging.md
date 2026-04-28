@@ -349,6 +349,8 @@ git commit -m "chore: add local infrastructure stack"
 - Modify: `packages/config/package.json`
 - Create: `packages/contracts/tsconfig.json`
 - Create: `packages/config/tsconfig.json`
+- Create: `packages/contracts/tsconfig.test.json`
+- Create: `packages/config/tsconfig.test.json`
 - Test: `packages/contracts/src/contracts.test.ts`
 - Test: `packages/config/src/env.test.ts`
 
@@ -459,12 +461,18 @@ Also tighten the contract test so it covers:
   - `PORT` coercion from string to number
   - `PostgresEnvSchema`, `RedisEnvSchema`, and `NatsEnvSchema` accepting valid URLs
 - `packages/config/src/env.test.ts` should import from the public package entrypoint rather than `./env`
+- `packages/contracts/src/contracts.test.ts` should import from the public package entrypoint rather than `./index`
 - `packages/contracts/package.json` and `packages/config/package.json` should stop using fake success scripts for package quality gates
 - add package-local `tsconfig.json` files and make:
   - `build` emit declarations into `dist/`
   - `typecheck` run `tsc --noEmit`
   - `lint` run the same TypeScript static check until a dedicated linter is introduced
   - `test` run the real Vitest file for each package
+- `packages/contracts/package.json` should expose the public package entrypoint used by the test, matching the `config` package pattern
+- separate production package compiler config from test compiler config:
+  - `tsconfig.json` should cover package source only
+  - `tsconfig.test.json` should cover test files and include `vitest/globals`
+  - package test scripts may use the test tsconfig, but package build/typecheck/lint should not depend on test files or test-only globals
 
 - [ ] **Step 4: Run test to verify it passes**
 
