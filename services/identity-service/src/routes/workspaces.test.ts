@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../app";
-import type { WorkspaceService, WorkspaceServicePort } from "../domain/workspace-service";
+import type { WorkspaceServicePort } from "../domain/workspace-service";
 import { registerWorkspaceRoutes } from "./workspaces";
 
 describe("POST /workspaces", () => {
@@ -74,7 +74,7 @@ describe("POST /workspaces", () => {
     };
 
     const app = buildApp({
-      workspaceService: workspaceService as WorkspaceService,
+      workspaceService,
     });
     await app.ready();
 
@@ -95,5 +95,11 @@ describe("POST /workspaces", () => {
     });
 
     await app.close();
+  });
+
+  it("fails fast when deps are provided without a workspace service", () => {
+    expect(() => buildApp({} as { workspaceService: WorkspaceServicePort })).toThrow(
+      "workspaceService",
+    );
   });
 });
