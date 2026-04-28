@@ -4,7 +4,14 @@ export interface WorkspaceRecord {
   ownerUserId: string;
 }
 
-export class WorkspaceService {
+export interface WorkspaceServicePort {
+  createWorkspace(input: {
+    name: string;
+    ownerUserId: string;
+  }): Promise<WorkspaceRecord>;
+}
+
+export class WorkspaceService implements WorkspaceServicePort {
   async createWorkspace(input: {
     name: string;
     ownerUserId: string;
