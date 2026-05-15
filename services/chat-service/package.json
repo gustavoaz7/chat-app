@@ -4,7 +4,11 @@
   "version": "0.0.0",
   "dependencies": {
     "@team-chat/contracts": "workspace:*",
+    "@prisma/client": "^6.7.0",
     "fastify": "^4.29.1"
+  },
+  "devDependencies": {
+    "prisma": "^6.7.0"
   },
   "scripts": {
     "build": "node -e \"process.exit(0)\"",
