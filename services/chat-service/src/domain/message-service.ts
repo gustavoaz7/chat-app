@@ -8,12 +8,18 @@ export interface MessageRecord {
   body: string;
 }
 
-export class MessageService {
+export interface MessageServicePort {
+  sendMessage(input: Omit<MessageRecord, "id">): Promise<MessageRecord>;
+}
+
+export class MessageService implements MessageServicePort {
+  private nextMessageId = 1;
+
   constructor(private readonly outbox: OutboxRepository) {}
 
   async sendMessage(input: Omit<MessageRecord, "id">): Promise<MessageRecord> {
     const message: MessageRecord = {
-      id: "msg_local_1",
+      id: `msg_local_${this.nextMessageId++}`,
       ...input,
     };
 

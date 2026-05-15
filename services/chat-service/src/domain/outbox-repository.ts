@@ -17,6 +17,6 @@ export class OutboxRepository {
   }
 
   all(): OutboxEventRecord[] {
-    return this.events;
+    return [...this.events];
   }
 }
