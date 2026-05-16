@@ -8,7 +8,7 @@ export function buildApp() {
   const outbox = new OutboxRepository();
   const messageService = new MessageService(outbox);
 
-  void registerMessageRoutes(app, messageService);
+  registerMessageRoutes(app, messageService);
 
   return app;
 }

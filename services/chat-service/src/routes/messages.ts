@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { SendMessageRequestSchema } from "@team-chat/contracts";
 import type { MessageServicePort } from "../domain/message-service";
 
-export async function registerMessageRoutes(
+export function registerMessageRoutes(
   app: FastifyInstance,
   messageService: MessageServicePort,
 ) {

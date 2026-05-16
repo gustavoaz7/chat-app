@@ -1,4 +1,4 @@
-import { OutboxRepository } from "./outbox-repository";
+import type { OutboxWriterPort } from "./outbox-repository";
 
 export interface MessageRecord {
   id: string;
@@ -14,8 +14,11 @@ export interface MessageServicePort {
 
 export class MessageService implements MessageServicePort {
   private nextMessageId = 1;
+  private readonly outbox: OutboxWriterPort;
 
-  constructor(private readonly outbox: OutboxRepository) {}
+  constructor(outbox: OutboxWriterPort) {
+    this.outbox = outbox;
+  }
 
   async sendMessage(input: Omit<MessageRecord, "id">): Promise<MessageRecord> {
     const message: MessageRecord = {

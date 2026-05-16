@@ -1,12 +1,17 @@
 {
   "name": "@services/identity-service",
   "private": true,
+  "type": "module",
   "version": "0.0.0",
   "dependencies": {
     "@team-chat/contracts": "workspace:*",
     "fastify": "^4.29.1"
   },
   "scripts": {
-    "test": "vitest run src/routes/workspaces.test.ts"
+    "build": "node -e \"console.error('build is not implemented yet for @services/identity-service'); process.exit(1)\"",
+    "dev": "node -e \"console.error('dev is not implemented yet for @services/identity-service'); process.exit(1)\"",
+    "lint": "node -e \"console.error('lint is not implemented yet for @services/identity-service'); process.exit(1)\"",
+    "test": "vitest run src/routes/workspaces.test.ts",
+    "typecheck": "node -e \"console.error('typecheck is not implemented yet for @services/identity-service'); process.exit(1)\""
   }
 }

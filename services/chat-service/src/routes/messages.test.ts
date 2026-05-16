@@ -10,7 +10,7 @@ describe("POST /messages", () => {
     const outbox = new OutboxRepository();
     const messageService = new MessageService(outbox);
     const app = Fastify();
-    await registerMessageRoutes(app, messageService);
+    registerMessageRoutes(app, messageService);
     await app.ready();
 
     const response = await app.inject({
@@ -92,6 +92,7 @@ describe("POST /messages", () => {
     });
 
     const snapshot = outbox.all();
+    snapshot[0]!.payload.body = "mutated";
     snapshot.push({
       type: "chat.message.sent",
       payload: {
@@ -103,6 +104,17 @@ describe("POST /messages", () => {
       },
     });
 
-    expect(outbox.all()).toHaveLength(1);
+    expect(outbox.all()).toEqual([
+      {
+        type: "chat.message.sent",
+        payload: {
+          messageId: "msg_local_1",
+          workspaceId: "ws_123",
+          channelId: "ch_123",
+          senderId: "usr_123",
+          body: "hello world",
+        },
+      },
+    ]);
   });
 });

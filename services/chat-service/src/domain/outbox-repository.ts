@@ -9,14 +9,25 @@ export interface OutboxEventRecord {
   };
 }
 
+export interface OutboxWriterPort {
+  append(event: OutboxEventRecord): Promise<void>;
+}
+
 export class OutboxRepository {
   private readonly events: OutboxEventRecord[] = [];
 
   async append(event: OutboxEventRecord): Promise<void> {
-    this.events.push(event);
+    this.events.push(cloneEvent(event));
   }
 
   all(): OutboxEventRecord[] {
-    return [...this.events];
+    return this.events.map(cloneEvent);
   }
+}
+
+function cloneEvent(event: OutboxEventRecord): OutboxEventRecord {
+  return {
+    ...event,
+    payload: { ...event.payload },
+  };
 }

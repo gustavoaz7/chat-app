@@ -689,14 +689,17 @@ export class OutboxRepository {
   }
 
   all(): OutboxEventRecord[] {
-    return this.events;
+    return this.events.map((event) => ({
+      ...event,
+      payload: { ...event.payload },
+    }));
   }
 }
 ```
 
 ```ts
 // services/chat-service/src/domain/message-service.ts
-import { OutboxRepository } from "./outbox-repository";
+import type { OutboxWriterPort } from "./outbox-repository";
 
 export interface MessageRecord {
   id: string;
@@ -707,11 +710,13 @@ export interface MessageRecord {
 }
 
 export class MessageService {
-  constructor(private readonly outbox: OutboxRepository) {}
+  constructor(private readonly outbox: OutboxWriterPort) {}
+
+  private nextId = 1;
 
   async sendMessage(input: Omit<MessageRecord, "id">): Promise<MessageRecord> {
     const message: MessageRecord = {
-      id: "msg_local_1",
+      id: `msg_local_${this.nextId++}`,
       ...input,
     };
 
@@ -735,13 +740,12 @@ export class MessageService {
 // services/chat-service/src/routes/messages.ts
 import type { FastifyInstance } from "fastify";
 import { SendMessageRequestSchema } from "@team-chat/contracts";
-import { MessageService } from "../domain/message-service";
-import { OutboxRepository } from "../domain/outbox-repository";
+import type { MessageServicePort } from "../domain/message-service";
 
-export async function registerMessageRoutes(app: FastifyInstance) {
-  const outbox = new OutboxRepository();
-  const messageService = new MessageService(outbox);
-
+export function registerMessageRoutes(
+  app: FastifyInstance,
+  messageService: MessageServicePort,
+) {
   app.post("/messages", async (request, reply) => {
     const payload = SendMessageRequestSchema.parse(request.body);
     const message = await messageService.sendMessage(payload);
@@ -750,7 +754,15 @@ export async function registerMessageRoutes(app: FastifyInstance) {
 }
 ```
 
-`services/chat-service/package.json` should declare the minimum dependencies needed to support the requested Task 5 shape, including `fastify` and the workspace dependency on `@team-chat/contracts`, so the focused message-route test can run against the real package/service imports.
+`services/chat-service/src/app.ts` should construct the concrete `OutboxRepository` and `MessageService`, then inject `messageService` into `registerMessageRoutes(...)` so the HTTP layer does not construct its own chat dependencies.
+
+Tighten `services/chat-service/src/routes/messages.test.ts` so it verifies the outbox behavior it claims to cover. The test should exercise a route wired with an observable outbox-backed `MessageService` and assert both:
+- the HTTP response payload
+- the recorded outbox event contents
+- the returned outbox snapshots are defensively copied deeply enough that mutating a prior read cannot corrupt stored event payloads
+
+`services/chat-service/package.json` should declare the minimum dependencies needed to support the requested Task 5 shape, including `fastify`, the workspace dependency on `@team-chat/contracts`, and the Prisma package wiring implied by the checked-in schema placeholder.
+It should also stop advertising fake `build`, `dev`, `lint`, and `typecheck` success scripts; keep only commands that honestly work at this stage.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -814,6 +826,8 @@ Expected: FAIL because the gateway app and route registration do not exist.
 ```ts
 // services/api-gateway/src/app.ts
 import Fastify from "fastify";
+import { registerMessageRoutes } from "./routes/messages";
+import { registerWorkspaceRoutes } from "./routes/workspaces";
 
 export function buildApp(deps: {
   identityClient: { createWorkspace: (payload: { name: string; ownerUserId: string }) => Promise<unknown> };
@@ -821,21 +835,18 @@ export function buildApp(deps: {
 }) {
   const app = Fastify();
 
-  app.post("/api/workspaces", async (request, reply) => {
-    const result = await deps.identityClient.createWorkspace(request.body as { name: string; ownerUserId: string });
-    return reply.code(201).send(result);
-  });
-
-  app.post("/api/messages", async (request, reply) => {
-    const result = await deps.chatClient.sendMessage(
-      request.body as { workspaceId: string; channelId: string; senderId: string; body: string },
-    );
-    return reply.code(201).send(result);
-  });
+  registerWorkspaceRoutes(app, deps.identityClient);
+  registerMessageRoutes(app, deps.chatClient);
 
   return app;
 }
 ```
+
+Keep the HTTP validation behavior explicit at the gateway boundary. `services/api-gateway/src/routes/workspaces.ts` and `services/api-gateway/src/routes/messages.ts` should validate payloads with the shared request schemas and return `400` without proxying invalid requests downstream.
+
+`services/api-gateway/src/clients/identity-client.ts` and `services/api-gateway/src/clients/chat-client.ts` should define the narrow client ports consumed by the gateway app so later networked clients can slot in without rewriting route modules.
+
+`services/api-gateway/package.json` should stop advertising fake-success scripts and keep only honest commands for the current stage, mirroring the pattern used in `services/chat-service`.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -892,23 +903,52 @@ Expected: FAIL because `MessageBroadcast` does not exist.
 
 ```ts
 // services/realtime-gateway/src/ws/message-broadcast.ts
-type Listener = (event: { type: "chat.message.sent"; body: string }) => void;
+type Listener = (event: {
+  type: "chat.message.sent";
+  messageId: string;
+  workspaceId: string;
+  channelId: string;
+  senderId: string;
+  body: string;
+}) => void;
 
 export class MessageBroadcast {
   private readonly listeners = new Map<string, Listener[]>();
 
-  subscribe(channelId: string, listener: Listener): void {
+  subscribe(channelId: string, listener: Listener): () => void {
     const current = this.listeners.get(channelId) ?? [];
     this.listeners.set(channelId, [...current, listener]);
+
+    return () => {
+      const next = (this.listeners.get(channelId) ?? []).filter((entry) => entry !== listener);
+
+      if (next.length === 0) {
+        this.listeners.delete(channelId);
+        return;
+      }
+
+      this.listeners.set(channelId, next);
+    };
   }
 
-  publish(channelId: string, event: { type: "chat.message.sent"; body: string }): void {
-    for (const listener of this.listeners.get(channelId) ?? []) {
+  publish(channelId: string, event: {
+    type: "chat.message.sent";
+    messageId: string;
+    workspaceId: string;
+    channelId: string;
+    senderId: string;
+    body: string;
+  }): void {
+    for (const listener of [...(this.listeners.get(channelId) ?? [])]) {
       listener(event);
     }
   }
 }
 ```
+
+Add `services/realtime-gateway/src/ws/session-manager.ts` as a small in-memory seam that tracks connected session IDs per channel. The app does not need real websockets yet, but it should compose a `SessionManager` and `MessageBroadcast` together in `services/realtime-gateway/src/app.ts` so later websocket work has a stable place to attach.
+
+`services/realtime-gateway/package.json` should also use honest stage-appropriate scripts rather than placeholder success commands.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -995,10 +1035,14 @@ Expected: FAIL because the projection helper does not exist.
 
 ```ts
 // services/notification-service/src/consumers/message-sent-consumer.ts
-import type { z } from "zod";
-import { MessageSentEventSchema } from "@team-chat/contracts";
-
-export function createNotificationFromMessageSent(event: z.infer<typeof MessageSentEventSchema>) {
+export function createNotificationFromMessageSent(event: {
+  type: "chat.message.sent";
+  messageId: string;
+  workspaceId: string;
+  channelId: string;
+  senderId: string;
+  body: string;
+}) {
   return {
     workspaceId: event.workspaceId,
     channelId: event.channelId,
@@ -1010,10 +1054,14 @@ export function createNotificationFromMessageSent(event: z.infer<typeof MessageS
 
 ```ts
 // services/search-service/src/consumers/message-sent-consumer.ts
-import type { z } from "zod";
-import { MessageSentEventSchema } from "@team-chat/contracts";
-
-export function createSearchDocumentFromMessageSent(event: z.infer<typeof MessageSentEventSchema>) {
+export function createSearchDocumentFromMessageSent(event: {
+  type: "chat.message.sent";
+  messageId: string;
+  workspaceId: string;
+  channelId: string;
+  senderId: string;
+  body: string;
+}) {
   return {
     id: event.messageId,
     workspaceId: event.workspaceId,
@@ -1023,6 +1071,10 @@ export function createSearchDocumentFromMessageSent(event: z.infer<typeof Messag
   };
 }
 ```
+
+`services/notification-service/src/app.ts` and `services/search-service/src/app.ts` should each compose their consumer helper into a small service runtime object so later queue wiring has a stable entrypoint.
+
+Both package manifests should use honest stage-appropriate scripts rather than placeholder success commands.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -1052,22 +1104,44 @@ git commit -m "feat: add async notification and search consumers"
 
 ```tsx
 // apps/web/src/features/chat/chat-page.test.tsx
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ChatPage } from "./chat-page";
 
 describe("ChatPage", () => {
+  it("renders seeded history from the gateway client", async () => {
+    render(
+      <ChatPage
+        loadMessages={async () => [
+          { id: "msg_1", senderName: "Ava", body: "Morning team" },
+          { id: "msg_2", senderName: "Noah", body: "Shipping today" },
+        ]}
+        sendMessage={async () => undefined}
+      />,
+    );
+
+    expect(await screen.findByText("Morning team")).toBeInTheDocument();
+    expect(screen.getByText("Shipping today")).toBeInTheDocument();
+  });
+
   it("sends the drafted message through the gateway client", async () => {
     const sendMessage = vi.fn().mockResolvedValue(undefined);
 
-    render(<ChatPage sendMessage={sendMessage} />);
+    render(
+      <ChatPage
+        loadMessages={async () => []}
+        sendMessage={sendMessage}
+      />,
+    );
 
     fireEvent.change(screen.getByLabelText("Message"), {
       target: { value: "hello team" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
 
-    expect(sendMessage).toHaveBeenCalledWith("hello team");
+    await waitFor(() => {
+      expect(sendMessage).toHaveBeenCalledWith("hello team");
+    });
   });
 });
 ```
@@ -1081,28 +1155,70 @@ Expected: FAIL because `ChatPage` does not exist.
 
 ```tsx
 // apps/web/src/features/chat/chat-page.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSendMessage } from "./use-send-message";
 
-export function ChatPage(props: { sendMessage: (body: string) => Promise<void> }) {
+export interface ChatMessage {
+  id: string;
+  senderName: string;
+  body: string;
+}
+
+export function ChatPage(props: {
+  loadMessages: () => Promise<ChatMessage[]>;
+  sendMessage: (body: string) => Promise<ChatMessage>;
+}) {
   const [body, setBody] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { isSending, submitMessage } = useSendMessage(props.sendMessage);
+
+  useEffect(() => {
+    void props.loadMessages().then((nextMessages) => {
+      setMessages(nextMessages);
+      setIsLoading(false);
+    });
+  }, [props]);
 
   return (
-    <form
-      onSubmit={async (event) => {
-        event.preventDefault();
-        await props.sendMessage(body);
-        setBody("");
-      }}
-    >
-      <label>
-        Message
-        <input value={body} onChange={(event) => setBody(event.target.value)} />
-      </label>
-      <button type="submit">Send</button>
-    </form>
+    <div>
+      <header>Product Chat</header>
+      <section>
+        {isLoading ? (
+          <p>Loading conversation…</p>
+        ) : (
+          messages.map((message) => (
+            <article key={message.id}>
+              <strong>{message.senderName}</strong>
+              <p>{message.body}</p>
+            </article>
+          ))
+        )}
+      </section>
+      <form
+        onSubmit={async (event) => {
+          event.preventDefault();
+          const nextMessage = await submitMessage(body);
+          setMessages((current) => [...current, nextMessage]);
+          setBody("");
+        }}
+      >
+        <label>
+          Message
+          <input value={body} onChange={(event) => setBody(event.target.value)} />
+        </label>
+        <button type="submit" disabled={isSending}>Send</button>
+      </form>
+    </div>
   );
 }
 ```
+
+`apps/web/src/features/chat/use-send-message.ts` should own the async send/pending-state behavior, while `ChatPage` owns layout, draft state, initial history loading, and appending the newly sent message into the visible conversation.
+
+The page should be product-shaped, not just a bare form: seeded history in a conversation pane, a small product header, and a sticky-feeling composer layout that can plausibly evolve into the real app shell later.
+
+`apps/web/package.json` should include the minimum realistic frontend dependencies for this slice and use honest scripts instead of placeholder success commands.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -1187,9 +1303,17 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
+      - run: pnpm --filter @packages/testing test
+      - run: pnpm --filter @team-chat/contracts test
+      - run: pnpm --filter @team-chat/config test
+      - run: pnpm --filter @team-chat/observability test
+      - run: pnpm --filter @services/identity-service test
+      - run: pnpm --filter @services/chat-service test
+      - run: pnpm --filter @services/api-gateway test
+      - run: pnpm --filter @services/realtime-gateway test
+      - run: pnpm --filter @services/notification-service test
+      - run: pnpm --filter @services/search-service test
+      - run: pnpm --filter @apps/web test
 ```
 
 ```md
@@ -1200,10 +1324,14 @@ jobs:
 [web] -> [api-gateway] -> [identity-service]
                       -> [chat-service]
 
-[chat-service] -> NATS -> [realtime-gateway]
-                       -> [notification-service]
-                       -> [search-service]
+[chat-service] -> event bus / queue -> [realtime-gateway]
+                                  -> [notification-service]
+                                  -> [search-service]
 ```
+
+`packages/observability/package.json` should behave like a real shared package, not a placeholder service package: add an explicit package entrypoint, real package `build`, `lint`, `typecheck`, and `test` scripts, and matching `tsconfig` files the same way `packages/contracts` and `packages/config` do.
+
+`packages/observability/src/tracing.ts` should provide a minimal trace/span context helper that can be shared across services later, even if it is only returning structured metadata for now.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -1222,6 +1350,7 @@ git commit -m "chore: add observability baseline and ci"
 **Files:**
 - Modify: `docs/runbooks/local-development.md`
 - Create: `apps/web/e2e/chat-smoke.spec.ts`
+- Create: `apps/web/playwright.config.ts`
 - Test: `apps/web/e2e/chat-smoke.spec.ts`
 
 - [ ] **Step 1: Write the failing Playwright smoke test**
@@ -1241,34 +1370,13 @@ test("send message flow", async ({ page }) => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `pnpm --filter @apps/web playwright test apps/web/e2e/chat-smoke.spec.ts`
-Expected: FAIL because the app does not yet render persisted messages.
+Expected: FAIL until the frontend package has Playwright wiring and the local runbook documents how to start the app for browser-based verification.
 
-- [ ] **Step 3: Implement the minimal UI loop to render submitted messages**
+- [ ] **Step 3: Wire the browser smoke layer around the existing chat slice**
 
-```tsx
-// apps/web/src/App.tsx
-import { useState } from "react";
-import { ChatPage } from "./features/chat/chat-page";
+Create `apps/web/playwright.config.ts` with a minimal local-web setup for the `apps/web/e2e` specs, and keep `apps/web/src/App.tsx` as the product-shaped seeded-history conversation slice already introduced in Task 9. The e2e test should verify the actual visible conversation loop in that page instead of introducing a second message list outside `ChatPage`.
 
-export function App() {
-  const [messages, setMessages] = useState<string[]>([]);
-
-  return (
-    <>
-      <ChatPage
-        sendMessage={async (body) => {
-          setMessages((current) => [...current, body]);
-        }}
-      />
-      <ul>
-        {messages.map((message) => (
-          <li key={message}>{message}</li>
-        ))}
-      </ul>
-    </>
-  );
-}
-```
+Update `apps/web/package.json` to include the Playwright dependency and an honest `e2e` script.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -1281,7 +1389,7 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/web/e2e/chat-smoke.spec.ts apps/web/src/App.tsx docs/runbooks/local-development.md
+git add apps/web/e2e/chat-smoke.spec.ts apps/web/playwright.config.ts apps/web/package.json docs/runbooks/local-development.md
 git commit -m "test: verify first end-to-end chat flow"
 ```
 

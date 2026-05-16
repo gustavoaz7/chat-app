@@ -1,0 +1,30 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.8.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @team-chat/testing test
+      - run: pnpm --filter @team-chat/contracts test
+      - run: pnpm --filter @team-chat/config test
+      - run: pnpm --filter @team-chat/observability test
+      - run: pnpm --filter @services/identity-service test
+      - run: pnpm --filter @services/chat-service test
+      - run: pnpm --filter @services/api-gateway test
+      - run: pnpm --filter @services/realtime-gateway test
+      - run: pnpm --filter @services/notification-service test
+      - run: pnpm --filter @services/search-service test
+      - run: pnpm --filter @apps/web test
