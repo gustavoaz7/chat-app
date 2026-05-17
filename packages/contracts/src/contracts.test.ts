@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  CreateDefaultChannelRequestSchema,
   CreateWorkspaceRequestSchema,
+  GetMessagesQuerySchema,
   MessageSentEventSchema,
   SendMessageRequestSchema,
 } from "@team-chat/contracts";
@@ -11,6 +13,7 @@ describe("shared contracts", () => {
       workspaceId: "ws_123",
       channelId: "ch_123",
       senderId: "usr_123",
+      senderName: "Avery",
       body: "hello",
     });
 
@@ -24,6 +27,30 @@ describe("shared contracts", () => {
     });
 
     expect(parsed.name).toBe("Engineering");
+  });
+
+  it("accepts default channel provisioning payloads", () => {
+    expect(
+      CreateDefaultChannelRequestSchema.parse({
+        workspaceId: "ws_1",
+        name: "general",
+      }),
+    ).toEqual({
+      workspaceId: "ws_1",
+      name: "general",
+    });
+  });
+
+  it("parses message history queries", () => {
+    expect(
+      GetMessagesQuerySchema.parse({
+        workspaceId: "ws_1",
+        channelId: "ch_1",
+      }),
+    ).toEqual({
+      workspaceId: "ws_1",
+      channelId: "ch_1",
+    });
   });
 
   it("exposes a message-sent event schema", () => {
@@ -47,6 +74,7 @@ describe("shared contracts", () => {
         workspaceId: "ws_123",
         channelId: "ch_123",
         senderId: "usr_123",
+        senderName: "Avery",
         body,
       }),
     ).toThrow();

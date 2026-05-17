@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Workspace {
+  id               String   @id
+  name             String
+  ownerUserId      String
+  defaultChannelId String?
+  createdAt        DateTime @default(now())
+
+  @@map("workspaces")
+}
+
+model Channel {
+  id          String   @id
+  workspaceId String
+  name        String
+  kind        String
+  createdAt   DateTime @default(now())
+
+  messages Message[]
+
+  @@index([workspaceId])
+  @@map("channels")
+}
+
+model Message {
+  id          String   @id
+  workspaceId String
+  channelId   String
+  senderId    String
+  senderName  String
+  body        String
+  createdAt   DateTime @default(now())
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Restrict)
+
+  @@index([workspaceId, channelId, createdAt])
+  @@map("messages")
+}
+
+model OutboxEvent {
+  id          String   @id
+  topic       String
+  payloadJson String
+  createdAt   DateTime @default(now())
+  publishedAt DateTime?
+
+  @@map("outbox_events")
+}
