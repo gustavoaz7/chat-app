@@ -19,6 +19,7 @@ describe("API Gateway", () => {
         id: "msg_123",
         ...payload,
       })),
+      listMessages: vi.fn(async () => []),
     };
     const app = buildApp({ identityClient, chatClient });
 
@@ -54,11 +55,13 @@ describe("API Gateway", () => {
         workspaceId: string;
         channelId: string;
         senderId: string;
+        senderName: string;
         body: string;
       }) => ({
         id: "msg_123",
         ...payload,
       })),
+      listMessages: vi.fn(async () => []),
     };
     const app = buildApp({ identityClient, chatClient });
 
@@ -69,6 +72,7 @@ describe("API Gateway", () => {
         workspaceId: "ws_123",
         channelId: "ch_123",
         senderId: "usr_123",
+        senderName: "Avery",
         body: "hello gateway",
       },
     });
@@ -79,14 +83,52 @@ describe("API Gateway", () => {
       workspaceId: "ws_123",
       channelId: "ch_123",
       senderId: "usr_123",
+      senderName: "Avery",
       body: "hello gateway",
     });
     expect(chatClient.sendMessage).toHaveBeenCalledWith({
       workspaceId: "ws_123",
       channelId: "ch_123",
       senderId: "usr_123",
+      senderName: "Avery",
       body: "hello gateway",
     });
+
+    await app.close();
+  });
+
+  it("proxies message history requests to the chat client", async () => {
+    const listMessages = vi.fn(async () => [
+      {
+        id: "msg_1",
+        workspaceId: "ws_1",
+        channelId: "ch_1",
+        senderId: "user_1",
+        senderName: "Ava",
+        body: "Morning team",
+        createdAt: "2026-05-17T10:00:00.000Z",
+      },
+    ]);
+    const identityClient = {
+      createWorkspace: vi.fn(async () => ({ id: "ws_1", defaultChannelId: "ch_1" })),
+    };
+    const chatClient = {
+      sendMessage: vi.fn(async () => ({ id: "msg_2" })),
+      listMessages,
+    };
+    const app = buildApp({ identityClient, chatClient });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/messages?workspaceId=ws_1&channelId=ch_1",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(listMessages).toHaveBeenCalledWith({
+      workspaceId: "ws_1",
+      channelId: "ch_1",
+    });
+    expect(response.json()).toHaveLength(1);
 
     await app.close();
   });
@@ -97,6 +139,7 @@ describe("API Gateway", () => {
     };
     const chatClient = {
       sendMessage: vi.fn(),
+      listMessages: vi.fn(),
     };
     const app = buildApp({ identityClient, chatClient });
 
@@ -118,6 +161,7 @@ describe("API Gateway", () => {
     };
     const chatClient = {
       sendMessage: vi.fn(),
+      listMessages: vi.fn(),
     };
     const app = buildApp({ identityClient, chatClient });
 
