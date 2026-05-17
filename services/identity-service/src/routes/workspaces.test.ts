@@ -6,7 +6,18 @@ import { registerWorkspaceRoutes } from "./workspaces";
 
 describe("POST /workspaces", () => {
   it("creates a workspace for an owner", async () => {
-    const app = buildApp();
+    const app = buildApp({
+      workspaceService: {
+        async createWorkspace(input) {
+          return {
+            id: "ws_created",
+            name: input.name,
+            ownerUserId: input.ownerUserId,
+            defaultChannelId: "ch_general",
+          };
+        },
+      },
+    });
     await app.ready();
 
     const response = await app.inject({
@@ -20,8 +31,10 @@ describe("POST /workspaces", () => {
 
     expect(response.statusCode).toBe(201);
     expect(response.json()).toMatchObject({
+      id: "ws_created",
       name: "Acme",
       ownerUserId: "usr_123",
+      defaultChannelId: "ch_general",
     });
 
     await app.close();
@@ -56,6 +69,7 @@ describe("POST /workspaces", () => {
           id: "ws_injected",
           name: input.name,
           ownerUserId: input.ownerUserId,
+          defaultChannelId: "ch_injected",
         };
       },
     });
@@ -75,6 +89,7 @@ describe("POST /workspaces", () => {
       id: "ws_injected",
       name: "Injected",
       ownerUserId: "usr_injected",
+      defaultChannelId: "ch_injected",
     });
 
     await app.close();
@@ -90,6 +105,7 @@ describe("POST /workspaces", () => {
           id: "ws_from_app_deps",
           name: input.name,
           ownerUserId: input.ownerUserId,
+          defaultChannelId: "ch_from_app_deps",
         };
       },
     };
@@ -113,6 +129,7 @@ describe("POST /workspaces", () => {
       id: "ws_from_app_deps",
       name: "Composed",
       ownerUserId: "usr_app",
+      defaultChannelId: "ch_from_app_deps",
     });
 
     await app.close();
