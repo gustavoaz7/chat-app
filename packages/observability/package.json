@@ -1,0 +1,16 @@
+{
+  "name": "@team-chat/observability",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "node -e \"console.error('dev is not implemented yet for @team-chat/observability'); process.exit(1)\"",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run src/logger.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "@team-chat/config",
+  "private": true,
+  "version": "0.0.0",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "node -e \"process.exit(0)\"",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run src/env.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}
