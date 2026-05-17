@@ -58,6 +58,6 @@ describe("workspace packages", () => {
     }
 
     expect(packageManifest("packages/testing").scripts?.test).toBe("vitest run src/workspace.test.ts");
-    expect(packageManifest("apps/web").scripts?.e2e).toBe("playwright test e2e/chat-smoke.spec.ts");
+    expect(packageManifest("apps/web").scripts?.e2e).toBe("playwright test e2e/chat.spec.ts");
   });
 });

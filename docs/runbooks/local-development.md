@@ -37,3 +37,14 @@ The first vertical slice is healthy when all of the following are true:
 - the seeded conversation renders in the browser
 - sending a message appends it to the visible conversation
 - the browser smoke test passes against the local preview server
+
+## Persistence slice
+
+1. Start local infrastructure:
+   `docker compose -f infra/docker-compose.yml up -d postgres`
+2. Export `DATABASE_URL`
+3. Generate the Prisma client:
+   `pnpm --filter @team-chat/database dev`
+4. Apply the migration:
+   `pnpm --filter @team-chat/database exec prisma migrate deploy --schema prisma/schema.prisma`
+5. Start the chat and identity services before running the web app.
