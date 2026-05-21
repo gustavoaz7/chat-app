@@ -3,11 +3,14 @@
   "private": true,
   "type": "module",
   "version": "0.0.0",
+  "dependencies": {
+    "fastify": "^4.29.1"
+  },
   "scripts": {
     "build": "node -e \"console.error('build is not implemented yet for @services/realtime-gateway'); process.exit(1)\"",
     "dev": "node -e \"console.error('dev is not implemented yet for @services/realtime-gateway'); process.exit(1)\"",
     "lint": "node -e \"console.error('lint is not implemented yet for @services/realtime-gateway'); process.exit(1)\"",
     "test": "vitest run src/ws/message-broadcast.test.ts",
-    "typecheck": "node -e \"console.error('typecheck is not implemented yet for @services/realtime-gateway'); process.exit(1)\""
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }

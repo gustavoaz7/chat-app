@@ -20,6 +20,15 @@ function packageManifest(relativePath: string): { scripts?: Record<string, strin
 
 const expectedScriptsByPackage: Record<string, string[]> = {
   "apps/web": ["build", "dev", "e2e", "lint", "test", "typecheck"],
+  "packages/database": [
+    "build",
+    "dev",
+    "lint",
+    "postinstall",
+    "prisma:generate",
+    "test",
+    "typecheck",
+  ],
 };
 
 describe("workspace packages", () => {
@@ -58,6 +67,6 @@ describe("workspace packages", () => {
     }
 
     expect(packageManifest("packages/testing").scripts?.test).toBe("vitest run src/workspace.test.ts");
-    expect(packageManifest("apps/web").scripts?.e2e).toBe("playwright test e2e/chat-smoke.spec.ts");
+    expect(packageManifest("apps/web").scripts?.e2e).toBe("playwright test e2e/chat.spec.ts");
   });
 });

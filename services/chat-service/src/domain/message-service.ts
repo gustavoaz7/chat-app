@@ -1,42 +1,21 @@
-import type { OutboxWriterPort } from "./outbox-repository";
-
-export interface MessageRecord {
-  id: string;
-  workspaceId: string;
-  channelId: string;
-  senderId: string;
-  body: string;
-}
+import type { MessageRecord, MessageRepositoryPort } from "./message-repository";
 
 export interface MessageServicePort {
-  sendMessage(input: Omit<MessageRecord, "id">): Promise<MessageRecord>;
+  sendMessage(input: Omit<MessageRecord, "id" | "createdAt">): Promise<MessageRecord>;
+  listMessages(input: {
+    workspaceId: string;
+    channelId: string;
+  }): Promise<MessageRecord[]>;
 }
 
 export class MessageService implements MessageServicePort {
-  private nextMessageId = 1;
-  private readonly outbox: OutboxWriterPort;
+  constructor(private readonly repository: MessageRepositoryPort) {}
 
-  constructor(outbox: OutboxWriterPort) {
-    this.outbox = outbox;
+  sendMessage(input: Omit<MessageRecord, "id" | "createdAt">) {
+    return this.repository.writeMessageWithOutbox(input);
   }
 
-  async sendMessage(input: Omit<MessageRecord, "id">): Promise<MessageRecord> {
-    const message: MessageRecord = {
-      id: `msg_local_${this.nextMessageId++}`,
-      ...input,
-    };
-
-    await this.outbox.append({
-      type: "chat.message.sent",
-      payload: {
-        messageId: message.id,
-        workspaceId: message.workspaceId,
-        channelId: message.channelId,
-        senderId: message.senderId,
-        body: message.body,
-      },
-    });
-
-    return message;
+  listMessages(input: { workspaceId: string; channelId: string }) {
+    return this.repository.listByConversation(input);
   }
 }

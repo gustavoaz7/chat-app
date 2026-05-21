@@ -7,7 +7,7 @@ afterEach(() => {
 });
 
 describe("ChatPage", () => {
-  it("renders seeded history from the gateway client", async () => {
+  it("renders durable history loaded from the API client", async () => {
     render(
       <ChatPage
         loadMessages={async () => [

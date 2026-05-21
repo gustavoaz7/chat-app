@@ -61,7 +61,15 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
 
-  packages/database: {}
+  packages/database:
+    dependencies:
+      '@prisma/client':
+        specifier: ^6.9.0
+        version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
+    devDependencies:
+      prisma:
+        specifier: ^6.9.0
+        version: 6.19.3(typescript@5.9.3)
 
   packages/observability: {}
 
@@ -97,13 +105,20 @@ importers:
       '@team-chat/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@team-chat/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       fastify:
         specifier: ^4.29.1
         version: 4.29.1
 
   services/notification-service: {}
 
-  services/realtime-gateway: {}
+  services/realtime-gateway:
+    dependencies:
+      fastify:
+        specifier: ^4.29.1
+        version: 4.29.1
 
   services/search-service: {}
 

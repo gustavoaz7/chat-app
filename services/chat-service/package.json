@@ -15,7 +15,7 @@
     "build": "node -e \"console.error('build is not implemented yet for @services/chat-service'); process.exit(1)\"",
     "dev": "node -e \"console.error('dev is not implemented yet for @services/chat-service'); process.exit(1)\"",
     "lint": "node -e \"console.error('lint is not implemented yet for @services/chat-service'); process.exit(1)\"",
-    "test": "vitest run src/routes/messages.test.ts",
-    "typecheck": "node -e \"console.error('typecheck is not implemented yet for @services/chat-service'); process.exit(1)\""
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }

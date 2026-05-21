@@ -5,6 +5,7 @@ export interface OutboxEventRecord {
     workspaceId: string;
     channelId: string;
     senderId: string;
+    senderName: string;
     body: string;
   };
 }

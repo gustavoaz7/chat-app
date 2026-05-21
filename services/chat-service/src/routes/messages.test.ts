@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../app";
+import { InMemoryMessageRepository } from "../domain/message-repository";
 import { MessageService } from "../domain/message-service";
 import { OutboxRepository } from "../domain/outbox-repository";
 import { registerMessageRoutes } from "./messages";
@@ -8,7 +9,7 @@ import { registerMessageRoutes } from "./messages";
 describe("POST /messages", () => {
   it("persists a message and records an outbox event", async () => {
     const outbox = new OutboxRepository();
-    const messageService = new MessageService(outbox);
+    const messageService = new MessageService(new InMemoryMessageRepository(outbox));
     const app = Fastify();
     registerMessageRoutes(app, messageService);
     await app.ready();
@@ -20,6 +21,7 @@ describe("POST /messages", () => {
         workspaceId: "ws_123",
         channelId: "ch_123",
         senderId: "usr_123",
+        senderName: "Avery",
         body: "hello world",
       },
     });
@@ -29,6 +31,7 @@ describe("POST /messages", () => {
       workspaceId: "ws_123",
       channelId: "ch_123",
       senderId: "usr_123",
+      senderName: "Avery",
       body: "hello world",
     });
     expect(outbox.all()).toEqual([
@@ -39,6 +42,7 @@ describe("POST /messages", () => {
           workspaceId: "ws_123",
           channelId: "ch_123",
           senderId: "usr_123",
+          senderName: "Avery",
           body: "hello world",
         },
       },
@@ -58,6 +62,7 @@ describe("POST /messages", () => {
         workspaceId: "ws_123",
         channelId: "ch_123",
         senderId: "usr_123",
+        senderName: "Avery",
         body: "first",
       },
     });
@@ -69,6 +74,7 @@ describe("POST /messages", () => {
         workspaceId: "ws_123",
         channelId: "ch_123",
         senderId: "usr_123",
+        senderName: "Avery",
         body: "second",
       },
     });
@@ -82,12 +88,13 @@ describe("POST /messages", () => {
 
   it("returns a safe copy when reading outbox events", async () => {
     const outbox = new OutboxRepository();
-    const messageService = new MessageService(outbox);
+    const messageService = new MessageService(new InMemoryMessageRepository(outbox));
 
     await messageService.sendMessage({
       workspaceId: "ws_123",
       channelId: "ch_123",
       senderId: "usr_123",
+      senderName: "Avery",
       body: "hello world",
     });
 
@@ -108,13 +115,62 @@ describe("POST /messages", () => {
       {
         type: "chat.message.sent",
         payload: {
-          messageId: "msg_local_1",
+          messageId: expect.any(String),
           workspaceId: "ws_123",
           channelId: "ch_123",
           senderId: "usr_123",
+          senderName: "Avery",
           body: "hello world",
         },
       },
     ]);
+  });
+
+  it("lists message history for one conversation", async () => {
+    const app = buildApp();
+    await app.ready();
+
+    await app.inject({
+      method: "POST",
+      url: "/messages",
+      payload: {
+        workspaceId: "ws_123",
+        channelId: "ch_123",
+        senderId: "usr_123",
+        senderName: "Avery",
+        body: "history entry",
+      },
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/messages?workspaceId=ws_123&channelId=ch_123",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual([
+      expect.objectContaining({
+        workspaceId: "ws_123",
+        channelId: "ch_123",
+        senderName: "Avery",
+        body: "history entry",
+      }),
+    ]);
+
+    await app.close();
+  });
+
+  it("returns 400 for invalid message history queries", async () => {
+    const app = buildApp();
+    await app.ready();
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/messages?workspaceId=&channelId=",
+    });
+
+    expect(response.statusCode).toBe(400);
+
+    await app.close();
   });
 });

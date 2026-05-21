@@ -22,6 +22,10 @@ export function buildApp(deps: ApiGatewayDependencies) {
     throw new Error("chatClient.sendMessage is required");
   }
 
+  if (typeof deps.chatClient?.listMessages !== "function") {
+    throw new Error("chatClient.listMessages is required");
+  }
+
   const app = Fastify();
 
   registerWorkspaceRoutes(app, deps.identityClient);
