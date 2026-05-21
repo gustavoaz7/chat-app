@@ -20,6 +20,15 @@ function packageManifest(relativePath: string): { scripts?: Record<string, strin
 
 const expectedScriptsByPackage: Record<string, string[]> = {
   "apps/web": ["build", "dev", "e2e", "lint", "test", "typecheck"],
+  "packages/database": [
+    "build",
+    "dev",
+    "lint",
+    "postinstall",
+    "prisma:generate",
+    "test",
+    "typecheck",
+  ],
 };
 
 describe("workspace packages", () => {
