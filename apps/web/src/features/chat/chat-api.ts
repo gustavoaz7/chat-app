@@ -42,6 +42,15 @@ function readStoredMessages(
   try {
     const messages = JSON.parse(raw) as ChatMessage[];
 
+    // Validate that messages is an array with expected ChatMessage properties
+    if (!Array.isArray(messages) || !messages.every(m => m && typeof m.id === 'string' && typeof m.senderName === 'string' && typeof m.body === 'string')) {
+      // Invalid shape - use fallback and clean up
+      const fallbackMessages: ChatMessage[] = [];
+      writeStoredMessages(storage, input, fallbackMessages);
+      storage.removeItem(legacyStorageKey);
+      return fallbackMessages;
+    }
+
     if (storage.getItem(scopedKey) === null) {
       writeStoredMessages(storage, input, messages);
       storage.removeItem(legacyStorageKey);
