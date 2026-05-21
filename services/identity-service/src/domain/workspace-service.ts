@@ -41,7 +41,11 @@ export class WorkspaceService implements WorkspaceServicePort {
         defaultChannelId: channel.id,
       };
     } catch (error) {
-      await this.repository.deleteById(workspace.id);
+      try {
+        await this.repository.deleteById(workspace.id);
+      } catch {
+        // Best-effort rollback: preserve the original provisioning failure.
+      }
       throw error;
     }
   }

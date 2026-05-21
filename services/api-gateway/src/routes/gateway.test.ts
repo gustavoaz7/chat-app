@@ -128,7 +128,38 @@ describe("API Gateway", () => {
       workspaceId: "ws_1",
       channelId: "ch_1",
     });
-    expect(response.json()).toHaveLength(1);
+    expect(response.json()).toEqual([
+      {
+        id: "msg_1",
+        workspaceId: "ws_1",
+        channelId: "ch_1",
+        senderId: "user_1",
+        senderName: "Ava",
+        body: "Morning team",
+        createdAt: "2026-05-17T10:00:00.000Z",
+      },
+    ]);
+
+    await app.close();
+  });
+
+  it("returns 400 for invalid message history queries", async () => {
+    const identityClient = {
+      createWorkspace: vi.fn(),
+    };
+    const chatClient = {
+      sendMessage: vi.fn(),
+      listMessages: vi.fn(),
+    };
+    const app = buildApp({ identityClient, chatClient });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/messages?workspaceId=&channelId=",
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(chatClient.listMessages).not.toHaveBeenCalled();
 
     await app.close();
   });
@@ -172,6 +203,7 @@ describe("API Gateway", () => {
         workspaceId: "",
         channelId: "",
         senderId: "",
+        senderName: "",
         body: "",
       },
     });

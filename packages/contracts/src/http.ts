@@ -6,7 +6,7 @@ export const SendMessageRequestSchema = z.object({
   workspaceId: z.string().min(1),
   channelId: z.string().min(1),
   senderId: z.string().min(1),
-  senderName: z.string().min(1),
+  senderName: z.string().trim().min(1).max(120),
   body: MessageBodySchema,
 });
 

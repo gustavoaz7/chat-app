@@ -1,22 +1,4 @@
-export interface MessageRecord {
-  id: string;
-  workspaceId: string;
-  channelId: string;
-  senderId: string;
-  senderName: string;
-  body: string;
-  createdAt: string;
-}
-
-export interface MessageRepositoryPort {
-  writeMessageWithOutbox(
-    input: Omit<MessageRecord, "id" | "createdAt">,
-  ): Promise<MessageRecord>;
-  listByConversation(input: {
-    workspaceId: string;
-    channelId: string;
-  }): Promise<MessageRecord[]>;
-}
+import type { MessageRecord, MessageRepositoryPort } from "./message-repository";
 
 export interface MessageServicePort {
   sendMessage(input: Omit<MessageRecord, "id" | "createdAt">): Promise<MessageRecord>;

@@ -6,14 +6,14 @@ export function registerMessageRoutes(
   app: FastifyInstance,
   chatClient: ChatClientPort,
 ) {
-  app.get("/api/messages", async (request) => {
+  app.get("/api/messages", async (request, reply) => {
     const parsedQuery = GetMessagesQuerySchema.safeParse(request.query);
 
     if (!parsedQuery.success) {
-      return {
+      return reply.code(400).send({
         message: "Invalid message query",
         issues: parsedQuery.error.issues,
-      };
+      });
     }
 
     return chatClient.listMessages(parsedQuery.data);

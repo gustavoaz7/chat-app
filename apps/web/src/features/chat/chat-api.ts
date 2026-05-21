@@ -1,6 +1,6 @@
 import type { ChatMessage } from "./chat-page";
 
-const storageKey = "team-chat-messages";
+const legacyStorageKey = "team-chat-messages";
 
 const fallbackMessages: ChatMessage[] = [
   {
@@ -20,32 +20,60 @@ const fallbackMessages: ChatMessage[] = [
   },
 ];
 
-function readStoredMessages(storage: Storage | undefined): ChatMessage[] | null {
+function makeStorageKey(input: { workspaceId: string; channelId: string }) {
+  return `${legacyStorageKey}:${input.workspaceId}:${input.channelId}`;
+}
+
+function readStoredMessages(
+  storage: Storage | undefined,
+  input: { workspaceId: string; channelId: string },
+): ChatMessage[] | null {
   if (storage === undefined) {
     return null;
   }
 
-  const raw = storage.getItem(storageKey);
+  const scopedKey = makeStorageKey(input);
+  const raw = storage.getItem(scopedKey) ?? storage.getItem(legacyStorageKey);
 
   if (raw === null) {
     return null;
   }
 
-  return JSON.parse(raw) as ChatMessage[];
+  try {
+    const messages = JSON.parse(raw) as ChatMessage[];
+
+    if (storage.getItem(scopedKey) === null) {
+      writeStoredMessages(storage, input, messages);
+      storage.removeItem(legacyStorageKey);
+    }
+
+    return messages;
+  } catch {
+    storage.removeItem(scopedKey);
+    storage.removeItem(legacyStorageKey);
+    return null;
+  }
 }
 
-function writeStoredMessages(storage: Storage | undefined, messages: ChatMessage[]) {
-  storage?.setItem(storageKey, JSON.stringify(messages));
+function writeStoredMessages(
+  storage: Storage | undefined,
+  input: { workspaceId: string; channelId: string },
+  messages: ChatMessage[],
+) {
+  storage?.setItem(makeStorageKey(input), JSON.stringify(messages));
 }
 
-function loadFallbackMessages(storage: Storage | undefined) {
-  const storedMessages = readStoredMessages(storage);
+function loadFallbackMessages(
+  storage: Storage | undefined,
+  input: { workspaceId: string; channelId: string },
+) {
+  const storedMessages = readStoredMessages(storage, input);
 
   if (storedMessages !== null) {
     return storedMessages;
   }
 
-  writeStoredMessages(storage, fallbackMessages);
+  writeStoredMessages(storage, input, fallbackMessages);
   return fallbackMessages;
 }
 
@@ -62,14 +90,14 @@ export function createChatApi(
 
         if (response.ok) {
           const messages = (await response.json()) as ChatMessage[];
-          writeStoredMessages(storage, messages);
+          writeStoredMessages(storage, input, messages);
           return messages;
         }
       } catch {
         // Fall back to local durable storage in frontend-only preview flows.
       }
 
-      return loadFallbackMessages(storage);
+      return loadFallbackMessages(storage, input);
     },
 
     async sendMessage(input: {
@@ -88,8 +116,12 @@ export function createChatApi(
 
         if (response.ok) {
           const message = (await response.json()) as ChatMessage;
-          const nextMessages = [...loadFallbackMessages(storage), message];
-          writeStoredMessages(storage, nextMessages);
+          const conversation = {
+            workspaceId: input.workspaceId,
+            channelId: input.channelId,
+          };
+          const nextMessages = [...loadFallbackMessages(storage, conversation), message];
+          writeStoredMessages(storage, conversation, nextMessages);
           return message;
         }
       } catch {
@@ -101,8 +133,12 @@ export function createChatApi(
         senderName: input.senderName,
         body: input.body,
       };
-      const nextMessages = [...loadFallbackMessages(storage), message];
-      writeStoredMessages(storage, nextMessages);
+      const conversation = {
+        workspaceId: input.workspaceId,
+        channelId: input.channelId,
+      };
+      const nextMessages = [...loadFallbackMessages(storage, conversation), message];
+      writeStoredMessages(storage, conversation, nextMessages);
       return message;
     },
   };

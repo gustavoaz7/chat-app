@@ -7,5 +7,9 @@ export function buildDatabaseUrl(input: {
   user: string;
   password: string;
 }) {
-  return `postgresql://${input.user}:${input.password}@${input.host}:${input.port}/${input.database}`;
+  const user = encodeURIComponent(input.user);
+  const password = encodeURIComponent(input.password);
+  const database = encodeURIComponent(input.database);
+
+  return `postgresql://${user}:${password}@${input.host}:${input.port}/${database}`;
 }

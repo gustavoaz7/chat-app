@@ -31,5 +31,38 @@ describe("POST /channels/default", () => {
       id: "ch_1",
       workspaceId: "ws_1",
     });
+
+    await app.close();
+  });
+
+  it("returns 400 for invalid default-channel payloads", async () => {
+    const createDefaultChannel = vi.fn(async () => ({
+      id: "ch_1",
+      workspaceId: "ws_1",
+      name: "general",
+      kind: "channel",
+    }));
+    const app = buildApp({
+      channelService: {
+        createDefaultChannel,
+      },
+      messageService: {
+        sendMessage: vi.fn(async () => {
+          throw new Error("not used");
+        }),
+        listMessages: vi.fn(async () => []),
+      },
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/channels/default",
+      payload: { workspaceId: "", name: "" },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(createDefaultChannel).not.toHaveBeenCalled();
+
+    await app.close();
   });
 });

@@ -60,10 +60,12 @@ describe("shared contracts", () => {
       workspaceId: "ws_123",
       channelId: "ch_123",
       senderId: "usr_123",
+      senderName: "Avery",
       body: "hello",
     });
 
     expect(parsed.type).toBe("chat.message.sent");
+    expect(parsed.senderName).toBe("Avery");
   });
 
   it("enforces the shared message-body max for requests and events", () => {
@@ -86,7 +88,40 @@ describe("shared contracts", () => {
         workspaceId: "ws_123",
         channelId: "ch_123",
         senderId: "usr_123",
+        senderName: "Avery",
         body,
+      }),
+    ).toThrow();
+  });
+
+  it("trims and bounds sender names on send-message requests", () => {
+    expect(
+      SendMessageRequestSchema.parse({
+        workspaceId: "ws_123",
+        channelId: "ch_123",
+        senderId: "usr_123",
+        senderName: "  Avery  ",
+        body: "hello",
+      }).senderName,
+    ).toBe("Avery");
+
+    expect(() =>
+      SendMessageRequestSchema.parse({
+        workspaceId: "ws_123",
+        channelId: "ch_123",
+        senderId: "usr_123",
+        senderName: "   ",
+        body: "hello",
+      }),
+    ).toThrow();
+
+    expect(() =>
+      SendMessageRequestSchema.parse({
+        workspaceId: "ws_123",
+        channelId: "ch_123",
+        senderId: "usr_123",
+        senderName: "a".repeat(121),
+        body: "hello",
       }),
     ).toThrow();
   });

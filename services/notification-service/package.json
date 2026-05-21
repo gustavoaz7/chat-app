@@ -8,6 +8,6 @@
     "dev": "node -e \"console.error('dev is not implemented yet for @services/notification-service'); process.exit(1)\"",
     "lint": "node -e \"console.error('lint is not implemented yet for @services/notification-service'); process.exit(1)\"",
     "test": "vitest run src/consumers/message-sent-consumer.test.ts",
-    "typecheck": "node -e \"console.error('typecheck is not implemented yet for @services/notification-service'); process.exit(1)\""
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }

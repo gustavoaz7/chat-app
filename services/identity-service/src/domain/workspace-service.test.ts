@@ -144,4 +144,42 @@ describe("WorkspaceService", () => {
 
     randomUuidSpy.mockRestore();
   });
+
+  it("preserves the original provisioning error when rollback also fails", async () => {
+    const createDefaultChannel = vi.fn(async () => {
+      throw new Error("chat unavailable");
+    });
+    const deleteById = vi.fn(async () => {
+      throw new Error("rollback failed");
+    });
+
+    const randomUuidSpy = vi
+      .spyOn(crypto, "randomUUID")
+      .mockReturnValue("123e4567-e89b-12d3-a456-426614174000");
+
+    const service = new WorkspaceService(
+      {
+        create: vi.fn(async (input: {
+          id: string;
+          name: string;
+          ownerUserId: string;
+        }) => ({
+          ...input,
+          defaultChannelId: null,
+        })),
+        updateDefaultChannelId: vi.fn(async () => undefined),
+        deleteById,
+      },
+      { createDefaultChannel },
+    );
+
+    await expect(
+      service.createWorkspace({
+        name: "Launch Room",
+        ownerUserId: "user_1",
+      }),
+    ).rejects.toThrow("chat unavailable");
+
+    randomUuidSpy.mockRestore();
+  });
 });

@@ -1,5 +1,14 @@
 import { OutboxRepository } from "./outbox-repository";
-import type { MessageRecord } from "./message-service";
+
+export interface MessageRecord {
+  id: string;
+  workspaceId: string;
+  channelId: string;
+  senderId: string;
+  senderName: string;
+  body: string;
+  createdAt: string;
+}
 
 export interface MessageRepositoryPort {
   writeMessageWithOutbox(
@@ -26,17 +35,27 @@ export class InMemoryMessageRepository implements MessageRepositoryPort {
     };
 
     this.messages.push(message);
-    await this.outbox.append({
-      type: "chat.message.sent",
-      payload: {
-        messageId: message.id,
-        workspaceId: message.workspaceId,
-        channelId: message.channelId,
-        senderId: message.senderId,
-        senderName: message.senderName,
-        body: message.body,
-      },
-    });
+    try {
+      await this.outbox.append({
+        type: "chat.message.sent",
+        payload: {
+          messageId: message.id,
+          workspaceId: message.workspaceId,
+          channelId: message.channelId,
+          senderId: message.senderId,
+          senderName: message.senderName,
+          body: message.body,
+        },
+      });
+    } catch (error) {
+      const index = this.messages.findIndex((candidate) => candidate.id === message.id);
+
+      if (index >= 0) {
+        this.messages.splice(index, 1);
+      }
+
+      throw error;
+    }
 
     return { ...message };
   }

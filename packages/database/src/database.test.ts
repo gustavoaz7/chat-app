@@ -14,6 +14,20 @@ describe("database helpers", () => {
     ).toBe("postgresql://postgres:postgres@localhost:5432/team_chat");
   });
 
+  it("encodes reserved URI characters in credentials", () => {
+    expect(
+      buildDatabaseUrl({
+        host: "localhost",
+        port: 5432,
+        database: "team/chat",
+        user: "user@team",
+        password: "p@ss:/?#",
+      }),
+    ).toBe(
+      "postgresql://user%40team:p%40ss%3A%2F%3F%23@localhost:5432/team%2Fchat",
+    );
+  });
+
   it("exports the shared default channel name", () => {
     expect(defaultChannelName).toBe("general");
   });

@@ -159,4 +159,18 @@ describe("POST /messages", () => {
 
     await app.close();
   });
+
+  it("returns 400 for invalid message history queries", async () => {
+    const app = buildApp();
+    await app.ready();
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/messages?workspaceId=&channelId=",
+    });
+
+    expect(response.statusCode).toBe(400);
+
+    await app.close();
+  });
 });

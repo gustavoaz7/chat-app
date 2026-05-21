@@ -41,10 +41,21 @@ CREATE TABLE "outbox_events" (
 );
 
 CREATE INDEX "channels_workspaceId_idx" ON "channels"("workspaceId");
+CREATE UNIQUE INDEX "channels_id_workspaceId_key" ON "channels"("id", "workspaceId");
 
 CREATE INDEX "messages_workspaceId_channelId_createdAt_idx" ON "messages"("workspaceId", "channelId", "createdAt");
 
+ALTER TABLE "channels"
+ADD CONSTRAINT "channels_workspaceId_fkey"
+FOREIGN KEY ("workspaceId") REFERENCES "workspaces"("id")
+ON DELETE CASCADE ON UPDATE CASCADE;
+
 ALTER TABLE "messages"
-ADD CONSTRAINT "messages_channelId_fkey"
-FOREIGN KEY ("channelId") REFERENCES "channels"("id")
+ADD CONSTRAINT "messages_workspaceId_fkey"
+FOREIGN KEY ("workspaceId") REFERENCES "workspaces"("id")
+ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "messages"
+ADD CONSTRAINT "messages_channelId_workspaceId_fkey"
+FOREIGN KEY ("channelId", "workspaceId") REFERENCES "channels"("id", "workspaceId")
 ON DELETE RESTRICT ON UPDATE CASCADE;

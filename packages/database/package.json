@@ -17,6 +17,8 @@
     "build": "tsc -p tsconfig.json",
     "dev": "prisma generate --schema prisma/schema.prisma",
     "lint": "tsc -p tsconfig.json --noEmit",
+    "postinstall": "pnpm run prisma:generate",
+    "prisma:generate": "prisma generate --schema prisma/schema.prisma",
     "test": "vitest run src/database.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }

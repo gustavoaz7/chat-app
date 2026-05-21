@@ -13,6 +13,8 @@ model Workspace {
   ownerUserId      String
   defaultChannelId String?
   createdAt        DateTime @default(now())
+  channels         Channel[]
+  messages         Message[]
 
   @@map("workspaces")
 }
@@ -24,9 +26,11 @@ model Channel {
   kind        String
   createdAt   DateTime @default(now())
 
-  messages Message[]
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  messages  Message[]
 
   @@index([workspaceId])
+  @@unique([id, workspaceId])
   @@map("channels")
 }
 
@@ -39,7 +43,8 @@ model Message {
   body        String
   createdAt   DateTime @default(now())
 
-  channel Channel @relation(fields: [channelId], references: [id], onDelete: Restrict)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channel   Channel   @relation(fields: [channelId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
 
   @@index([workspaceId, channelId, createdAt])
   @@map("messages")
